@@ -8,12 +8,10 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { name, email, company, message } = body;
 
-    // Debugging logs (will show up in Vercel Runtime Logs)
-    console.log("DEBUG: SENDGRID_API_KEY present?", !!process.env.SENDGRID_API_KEY);
-    console.log("DEBUG: From email:", process.env.FROM_EMAIL || "NOT SET");
     console.log("DEBUG: Body received:", body);
 
-    const msg = {
+    // 📩 Email to YOU
+    const msgToMe = {
       to: "reply@velocloudai.com", // must be verified in SendGrid
       from: "david@velocloudai.com", // must be verified in SendGrid
       subject: `New Contact Form Submission from website – ${name}`,
@@ -31,9 +29,24 @@ export async function POST(req: Request) {
       `,
     };
 
-    await sgMail.send(msg);
+    await sgMail.send(msgToMe);
 
-    return NextResponse.json({ success: true, message: "Email sent successfully" });
+    // 📩 Auto-reply back to the visitor
+    const autoReply = {
+      to: email, // send to the person who filled the form
+      from: "david@velocloudai.com", // must be verified in SendGrid
+      subject: "Thanks for contacting VeloCloud AI!",
+      text: `Hi ${name}, thanks for reaching out to VeloCloud AI. We'll get back to you as soon as possible.`,
+      html: `
+        <p>Hi ${name},</p>
+        <p>Thanks for reaching out to <strong>VeloCloud AI</strong>. We’ve received your message and will get back to you shortly.</p>
+        <p>Best regards,<br/>VeloCloud AI Team</p>
+      `,
+    };
+
+    await sgMail.send(autoReply);
+
+    return NextResponse.json({ success: true, message: "Emails sent successfully!" });
   } catch (error: any) {
     console.error("SendGrid error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
